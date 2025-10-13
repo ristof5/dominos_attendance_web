@@ -1,0 +1,74 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================
+// 🧑 User (Login Account)
+// ============================
+model User {
+  id        Int          @id @default(autoincrement())
+  name      String
+  email     String       @unique
+  password  String
+  role      Role         @default(EMPLOYEE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  attendances Attendance[]
+}
+
+// ============================
+// 🕒 Attendance (Absensi Harian)
+// ============================
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  date        DateTime  @default(now())
+  status      AttendanceStatus
+  latitude    Float?
+  longitude   Float?
+  checkInTime DateTime?  // waktu absen masuk
+  checkOutTime DateTime? // waktu absen keluar
+
+  userId  Int
+  user    User       @relation(fields: [userId], references: [id])
+  locationId Int?
+  location   Location?  @relation(fields: [locationId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============================
+// 📍 Location (Titik Domino’s Pizza)
+// ============================
+model Location {
+  id          Int         @id @default(autoincrement())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  radiusMeter Int         @default(100) // batas validasi jarak absensi
+
+  attendances Attendance[]
+  createdAt   DateTime    @default(now())
+}
+
+// ============================
+// 🔖 Enum (tipe tetap)
+// ============================
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}

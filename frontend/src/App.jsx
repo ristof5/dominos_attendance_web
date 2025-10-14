@@ -1,10 +1,15 @@
 // ============================================
-// src/App.jsx - Updated with Admin Routes
+// src/App.jsx - UPDATED WITH SHIFTS
 // ============================================
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
-import ProtectedRoute from "./components/protectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -15,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLocations from "./pages/AdminLocations";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAttendanceReport from "./pages/AdminAttendanceReport";
+import AdminShifts from "./pages/AdminShifts"; // NEW
 import "./styles/index.css";
 
 export default function App() {
@@ -24,8 +30,14 @@ export default function App() {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={token ? <Navigate to="/" /> : <Login />} />
-        <Route path="/register" element={token ? <Navigate to="/" /> : <Register />} />
+        <Route
+          path="/login"
+          element={token ? <Navigate to="/" /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={token ? <Navigate to="/" /> : <Register />}
+        />
 
         {/* Employee Routes */}
         <Route
@@ -63,6 +75,14 @@ export default function App() {
           }
         />
         <Route
+          path="/admin/shifts"
+          element={
+            <AdminRoute>
+              <AdminShifts />
+            </AdminRoute>
+          }
+        />
+        <Route
           path="/admin/locations"
           element={
             <AdminRoute>
@@ -93,4 +113,3 @@ export default function App() {
     </Router>
   );
 }
-

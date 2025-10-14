@@ -1,5 +1,5 @@
 // ============================================
-// src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx - UPDATED
 // ============================================
 
 import { useEffect, useState } from "react";
@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/authStore";
 import { useAttendanceStore } from "../store/attendanceStore";
 import { useNavigate } from "react-router-dom";
 // import "../styles/Dashboard.css";
+//import "../styles/Shifts.css";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function Dashboard() {
     checkInTime: null,
     checkOutTime: null,
   });
+  const [shiftInfo, setShiftInfo] = useState(null);
 
   useEffect(() => {
     getTodayAttendance();
@@ -32,6 +34,10 @@ export default function Dashboard() {
         checkInTime: todayAttendance.checkInTime,
         checkOutTime: todayAttendance.checkOutTime,
       });
+
+      if (todayAttendance.shift) {
+        setShiftInfo(todayAttendance.shift);
+      }
     }
   }, [todayAttendance]);
 
@@ -39,6 +45,31 @@ export default function Dashboard() {
     logout();
     navigate("/login");
   };
+
+  const getShiftStatus = () => {
+    if (!shiftInfo) return null;
+
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, "0");
+    const currentMinutes = String(now.getMinutes()).padStart(2, "0");
+    const currentTime = `${currentHours}:${currentMinutes}`;
+
+    const [shiftHour, shiftMin] = shiftInfo.startTime.split(":").map(Number);
+    const shiftMinutes = shiftHour * 60 + shiftMin;
+
+    const [currentHour, currentMin] = currentTime.split(":").map(Number);
+    const nowMinutes = currentHour * 60 + currentMin;
+
+    const minutesUntilShift = shiftMinutes - nowMinutes;
+
+    return {
+      minutesUntilShift,
+      isShiftTime: minutesUntilShift <= 0,
+      formattedTime: Math.abs(minutesUntilShift),
+    };
+  };
+
+  const shiftStatus = getShiftStatus();
 
   return (
     <div className="dashboard-container">
@@ -51,6 +82,44 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+
+      {/* Shift Info Card */}
+      {shiftInfo && (
+        <div className="shift-info-card">
+          <h3>⏰ Your Shift Today</h3>
+          <div className="shift-details">
+            <div className="shift-detail-item">
+              <div className="shift-detail-label">Shift Name</div>
+              <div className="shift-detail-value">{shiftInfo.name}</div>
+            </div>
+            <div className="shift-detail-item">
+              <div className="shift-detail-label">Start Time</div>
+              <div className="shift-detail-value">{shiftInfo.startTime}</div>
+            </div>
+            <div className="shift-detail-item">
+              <div className="shift-detail-label">End Time</div>
+              <div className="shift-detail-value">{shiftInfo.endTime}</div>
+            </div>
+            <div className="shift-detail-item">
+              <div className="shift-detail-label">Late Tolerance</div>
+              <div className="shift-detail-value">
+                {shiftInfo.lateToleranceMinutes} min
+              </div>
+            </div>
+          </div>
+          {shiftStatus && (
+            <div className="shift-status">
+              {shiftStatus.isShiftTime ? (
+                <>🟢 Shift Active - You can check in now</>
+              ) : shiftStatus.minutesUntilShift > 0 ? (
+                <>⏳ Shift starts in {shiftStatus.formattedTime} minutes</>
+              ) : (
+                <>🔴 Shift already ended</>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="dashboard-grid">
         {/* Status Card */}
@@ -133,6 +202,12 @@ export default function Dashboard() {
               {user?.role}
             </span>
           </div>
+          {shiftInfo && (
+            <div className="info-row">
+              <span className="label">Shift:</span>
+              <span className="value">{shiftInfo.name}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

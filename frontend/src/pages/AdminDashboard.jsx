@@ -63,7 +63,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-container">
-      <h1>📊 Admin Dashboard</h1>
+      <h1 className="text-gray-900 font-bold text-2xl mb-4">📊 Admin Dashboard</h1>
 
       <div className="stats-grid">
         <div className="stat-card">

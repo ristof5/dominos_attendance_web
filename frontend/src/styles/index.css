@@ -336,6 +336,82 @@ html, body, #root {
   background: #e2e3e5;
   color: #383d41;
 }
+/* ============================================
+   Shift Info Card - Readable Version
+   ============================================ */
+
+.shift-info-card {
+  background: #ffffff; /* ubah dari gradasi ungu ke putih */
+  color: #333; /* teks lebih gelap agar terbaca */
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eaeaea;
+}
+
+.shift-info-card h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #4a4a4a;
+}
+
+.shift-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.shift-detail-item {
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.shift-detail-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+.shift-detail-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Status Info di bawah Card */
+.shift-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 15px;
+}
+
+/* Warna status dinamis */
+.shift-status.on-time {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.shift-status.late {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.shift-status.upcoming {
+  background: rgba(255, 193, 7, 0.1);
+  color: #856404;
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
 
 /* ============================================
    Check-in Page Styles
@@ -614,10 +690,11 @@ html, body, #root {
   max-width: 1200px;
   margin: 30px auto;
   padding: 0 20px;
+  
 }
 
 .admin-container h1 {
-  color: white;
+  color: black;
   margin-bottom: 30px;
   text-align: center;
   font-size: 32px;

@@ -235,7 +235,8 @@
   border-left: 3px solid #fff;
 }
 
-.status-indicator {
+/* Menjadi */
+.shift-status-indicator {
   display: inline-block;
   width: 12px;
   height: 12px;
@@ -245,11 +246,11 @@
   vertical-align: middle;
 }
 
-.status-indicator.late {
+.shift-status-indicator.late {
   background: #dc3545;
 }
 
-.status-indicator.early {
+.shift-status-indicator.early {
   background: #ffc107;
 }
 

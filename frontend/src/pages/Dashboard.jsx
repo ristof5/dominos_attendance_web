@@ -1,5 +1,6 @@
 // ============================================
 // src/pages/Dashboard.jsx - UPDATED
+// (Removed old header, now uses Navigation component)
 // ============================================
 
 import { useEffect, useState } from "react";
@@ -7,7 +8,7 @@ import { useAuthStore } from "../store/authStore";
 import { useAttendanceStore } from "../store/attendanceStore";
 import { useNavigate } from "react-router-dom";
 // import "../styles/Dashboard.css";
-//import "../styles/Shifts.css";
+import "../styles/Shifts.css";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -73,55 +74,47 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>🍕 Domino's Pizza - Attendance System</h1>
-        <div className="user-info">
-          <span>Welcome, {user?.name}</span>
-          <button onClick={handleLogout} className="btn btn-danger">
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Shift Info Card */}
-      {shiftInfo && (
-        <div className="shift-info-card">
-          <h3>⏰ Your Shift Today</h3>
-          <div className="shift-details">
-            <div className="shift-detail-item">
-              <div className="shift-detail-label">Shift Name</div>
-              <div className="shift-detail-value">{shiftInfo.name}</div>
-            </div>
-            <div className="shift-detail-item">
-              <div className="shift-detail-label">Start Time</div>
-              <div className="shift-detail-value">{shiftInfo.startTime}</div>
-            </div>
-            <div className="shift-detail-item">
-              <div className="shift-detail-label">End Time</div>
-              <div className="shift-detail-value">{shiftInfo.endTime}</div>
-            </div>
-            <div className="shift-detail-item">
-              <div className="shift-detail-label">Late Tolerance</div>
-              <div className="shift-detail-value">
-                {shiftInfo.lateToleranceMinutes} min
-              </div>
-            </div>
-          </div>
-          {shiftStatus && (
-            <div className="shift-status">
-              {shiftStatus.isShiftTime ? (
-                <>🟢 Shift Active - You can check in now</>
-              ) : shiftStatus.minutesUntilShift > 0 ? (
-                <>⏳ Shift starts in {shiftStatus.formattedTime} minutes</>
-              ) : (
-                <>🔴 Shift already ended</>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* No Header Here - Navigation.jsx is global */}
 
       <div className="dashboard-grid">
+        {/* Shift Info Card */}
+        {shiftInfo && (
+          <div className="card shift-info-card">
+            <h3>⏰ Your Shift Today</h3>
+            <div className="shift-details">
+              <div className="shift-detail-item">
+                <div className="shift-detail-label">Shift Name</div>
+                <div className="shift-detail-value">{shiftInfo.name}</div>
+              </div>
+              <div className="shift-detail-item">
+                <div className="shift-detail-label">Start Time</div>
+                <div className="shift-detail-value">{shiftInfo.startTime}</div>
+              </div>
+              <div className="shift-detail-item">
+                <div className="shift-detail-label">End Time</div>
+                <div className="shift-detail-value">{shiftInfo.endTime}</div>
+              </div>
+              <div className="shift-detail-item">
+                <div className="shift-detail-label">Late Tolerance</div>
+                <div className="shift-detail-value">
+                  {shiftInfo.lateToleranceMinutes} min
+                </div>
+              </div>
+            </div>
+            {shiftStatus && (
+              <div className="shift-status">
+                {shiftStatus.isShiftTime ? (
+                  <>🟢 Shift Active - You can check in now</>
+                ) : shiftStatus.minutesUntilShift > 0 ? (
+                  <>⏳ Shift starts in {shiftStatus.formattedTime} minutes</>
+                ) : (
+                  <>🔴 Shift already ended</>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Status Card */}
         <div className="card status-card">
           <h2>Status Hari Ini</h2>
@@ -206,6 +199,18 @@ export default function Dashboard() {
             <div className="info-row">
               <span className="label">Shift:</span>
               <span className="value">{shiftInfo.name}</span>
+            </div>
+          )}
+          {user?.role === "ADMIN" && (
+            <div className="info-row">
+              <span className="label">Access:</span>
+              <button
+                onClick={() => navigate("/admin")}
+                className="btn btn-sm btn-primary"
+                style={{ marginLeft: "auto" }}
+              >
+                → Admin Panel
+              </button>
             </div>
           )}
         </div>

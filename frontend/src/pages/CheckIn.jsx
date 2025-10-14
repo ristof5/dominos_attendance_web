@@ -151,7 +151,7 @@ export default function CheckIn() {
           </div>
 
           <div className="check-in-status-box">
-            <span className={`status-indicator ${checkInStatus.status.toLowerCase()}`}></span>
+            <span className={`shift-status-indicator ${checkInStatus.status.toLowerCase()}`}></span>
             <strong>Current Status: {checkInStatus.status}</strong>
             <div className="check-in-countdown">
               {checkInStatus.status === "EARLY" && (

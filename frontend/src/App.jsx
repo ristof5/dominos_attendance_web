@@ -1,5 +1,5 @@
 // ============================================
-// src/App.jsx - UPDATED WITH SHIFTS
+// src/App.jsx - FINAL VERSION WITH NAVIGATION
 // ============================================
 
 import {
@@ -9,6 +9,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
+import Navigation from "./components/Navigation"; // NEW
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Login from "./pages/Login";
@@ -17,10 +18,10 @@ import Dashboard from "./pages/Dashboard";
 import CheckIn from "./pages/CheckIn";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminShifts from "./pages/AdminShifts";
 import AdminLocations from "./pages/AdminLocations";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAttendanceReport from "./pages/AdminAttendanceReport";
-import AdminShifts from "./pages/AdminShifts"; // NEW
 import "./styles/index.css";
 
 export default function App() {
@@ -28,88 +29,93 @@ export default function App() {
 
   return (
     <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={token ? <Navigate to="/" /> : <Login />}
-        />
-        <Route
-          path="/register"
-          element={token ? <Navigate to="/" /> : <Register />}
-        />
+      {/* Navigation only shows when logged in */}
+      {token && <Navigation />}
 
-        {/* Employee Routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/check-in"
-          element={
-            <ProtectedRoute>
-              <CheckIn />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/history"
-          element={
-            <ProtectedRoute>
-              <AttendanceHistory />
-            </ProtectedRoute>
-          }
-        />
+      <div className={token ? "main-content" : ""}>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={token ? <Navigate to="/" /> : <Login />}
+          />
+          <Route
+            path="/register"
+            element={token ? <Navigate to="/" /> : <Register />}
+          />
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/shifts"
-          element={
-            <AdminRoute>
-              <AdminShifts />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/locations"
-          element={
-            <AdminRoute>
-              <AdminLocations />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <AdminRoute>
-              <AdminUsers />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/attendance-report"
-          element={
-            <AdminRoute>
-              <AdminAttendanceReport />
-            </AdminRoute>
-          }
-        />
+          {/* Employee Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/check-in"
+            element={
+              <ProtectedRoute>
+                <CheckIn />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <AttendanceHistory />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/shifts"
+            element={
+              <AdminRoute>
+                <AdminShifts />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/locations"
+            element={
+              <AdminRoute>
+                <AdminLocations />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/attendance-report"
+            element={
+              <AdminRoute>
+                <AdminAttendanceReport />
+              </AdminRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </div>
     </Router>
   );
 }

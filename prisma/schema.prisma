@@ -1,0 +1,134 @@
+// ============================================
+// prisma/schema.prisma - UPDATED WITH SHIFTS
+// ============================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================
+// 🧑 User (Login Account)
+// ============================
+model User {
+  id        Int          @id @default(autoincrement())
+  name      String
+  email     String       @unique
+  password  String
+  role      Role         @default(EMPLOYEE)
+  
+  // Shift assignment
+  shiftId   Int?
+  shift     Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  attendances Attendance[]
+}
+
+// ============================
+// ⏰ Shift (Work Schedule)
+// ============================
+model Shift {
+  id                        Int          @id @default(autoincrement())
+  name                      String       // "Shift 1", "Shift 2", "Shift 3"
+  startTime                 String       // Format: "HH:mm" (contoh: "07:30")
+  endTime                   String       // Format: "HH:mm" (contoh: "16:00")
+  lateToleranceMinutes      Int          @default(30)   // Batas telat check-in (menit)
+  earlyOutToleranceMinutes  Int          @default(30)   // Batas pulang cepat (menit)
+  isActive                  Boolean      @default(true)
+  
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+
+  // Relations
+  employees                 User[]
+  shiftLocations            ShiftLocation[]
+  attendances               Attendance[]
+}
+
+// ============================
+// 📍 Location (Titik Domino's Pizza)
+// ============================
+model Location {
+  id          Int         @id @default(autoincrement())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  radiusMeter Int         @default(100)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  attendances       Attendance[]
+  shiftLocations    ShiftLocation[]
+}
+
+// ============================
+// 🔗 ShiftLocation (Many-to-Many)
+// ============================
+model ShiftLocation {
+  id          Int      @id @default(autoincrement())
+  shiftId     Int
+  locationId  Int
+  
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([shiftId, locationId])
+}
+
+// ============================
+// 🕒 Attendance (Absensi Harian)
+// ============================
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  date        DateTime  @default(now())
+  status      AttendanceStatus
+  latitude    Float?
+  longitude   Float?
+  checkInTime DateTime?
+  checkOutTime DateTime?
+  
+  // Calculated fields for reporting
+  isLate      Boolean   @default(false)  // Terlambat check-in
+  isEarlyOut  Boolean   @default(false)  // Pulang lebih awal
+  overtimeMinutes Int   @default(0)      // Menit overtime
+
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  locationId  Int?
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  
+  shiftId     Int?
+  shift       Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+}
+
+// ============================
+// 🔖 Enum (tipe tetap)
+// ============================
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT       // Hadir tepat waktu
+  LATE          // Terlambat check-in
+  EARLY         // Datang terlalu awal (sebelum shift)
+  EARLY_OUT     // Pulang lebih awal
+  ABSENT        // Tidak hadir
+  LEAVE         // Cuti
+  OVERTIME      // Lembur
+}

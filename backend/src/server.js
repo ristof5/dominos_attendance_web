@@ -1,11 +1,16 @@
+// ============================================
+// server.js - UPDATED WITH SHIFTS
+// ============================================
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
-import locationRoutes from './routes/locations.js'; 
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
+import locationRoutes from "./routes/locations.js";
 import attendanceRoutes from "./routes/attendances.js";
+import shiftRoutes from "./routes/shifts.js"; // added
 
 dotenv.config();
 
@@ -36,6 +41,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/attendances", attendanceRoutes);
+app.use("/api/shifts", shiftRoutes); // added
 
 // Port
 const PORT = process.env.PORT || 5000;

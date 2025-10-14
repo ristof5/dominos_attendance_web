@@ -1,12 +1,21 @@
+// ============================================
+// routes/attendances.js - UPDATED
+// ============================================
+
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticateToken } from "../middleware/auth.js";
 import { isWithinRadius } from "../utils/geolocation.js";
+import {
+  calculateCheckInStatus,
+  calculateCheckOutStatus,
+  getShiftInfo,
+} from "../utils/shiftHelper.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Check in
+// Check in WITH SHIFT LOGIC
 router.post("/check-in", authenticateToken, async (req, res) => {
   try {
     const { latitude, longitude, locationId } = req.body;
@@ -14,6 +23,22 @@ router.post("/check-in", authenticateToken, async (req, res) => {
 
     if (latitude === undefined || longitude === undefined || !locationId) {
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Get user with shift
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { shift: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.shift) {
+      return res.status(400).json({
+        error: "User is not assigned to any shift. Contact admin.",
+      });
     }
 
     // Get location
@@ -25,7 +50,23 @@ router.post("/check-in", authenticateToken, async (req, res) => {
       return res.status(404).json({ error: "Location not found" });
     }
 
-    // Check if user is within radius
+    // Check if location is valid for this shift
+    const shiftLocation = await prisma.shiftLocation.findUnique({
+      where: {
+        shiftId_locationId: {
+          shiftId: user.shift.id,
+          locationId: parseInt(locationId),
+        },
+      },
+    });
+
+    if (!shiftLocation) {
+      return res.status(400).json({
+        error: "This location is not assigned to your shift",
+      });
+    }
+
+    // Check geolocation
     const withinRadius = isWithinRadius(
       parseFloat(latitude),
       parseFloat(longitude),
@@ -37,7 +78,6 @@ router.post("/check-in", authenticateToken, async (req, res) => {
     if (!withinRadius) {
       return res.status(400).json({
         error: "You are outside the allowed check-in area",
-        distanceInfo: "Please move closer to the store",
       });
     }
 
@@ -57,16 +97,37 @@ router.post("/check-in", authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "Already checked in today" });
     }
 
-    // Create attendance record
+    // Calculate check-in status based on shift
     const now = new Date();
+    const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
+
+    const checkInResult = calculateCheckInStatus(
+      currentTimeStr,
+      user.shift.startTime,
+      user.shift.lateToleranceMinutes
+    );
+
+    // Determine final status
+    let finalStatus = checkInResult.status;
+
+    // If more than tolerance, mark as LATE
+    if (checkInResult.isLate) {
+      finalStatus = "LATE";
+    }
+
+    // Create attendance record
     const attendance = await prisma.attendance.create({
       data: {
         userId,
         locationId: parseInt(locationId),
+        shiftId: user.shift.id,
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         checkInTime: now,
-        status: "PRESENT",
+        status: finalStatus,
+        isLate: checkInResult.isLate,
         date: today,
       },
     });
@@ -74,6 +135,12 @@ router.post("/check-in", authenticateToken, async (req, res) => {
     res.status(201).json({
       message: "Check-in successful",
       attendance,
+      checkInInfo: {
+        status: finalStatus,
+        shiftStartTime: user.shift.startTime,
+        currentTime: currentTimeStr,
+        minutesLate: checkInResult.minutesLate || 0,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -81,11 +148,23 @@ router.post("/check-in", authenticateToken, async (req, res) => {
   }
 });
 
-// Check out
+// Check out WITH SHIFT LOGIC
 router.post("/check-out", authenticateToken, async (req, res) => {
   try {
     const { latitude, longitude } = req.body;
     const userId = req.user.id;
+
+    // Get user with shift
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { shift: true },
+    });
+
+    if (!user || !user.shift) {
+      return res.status(400).json({
+        error: "User or shift not found",
+      });
+    }
 
     // Get today's attendance record
     const today = new Date();
@@ -108,17 +187,48 @@ router.post("/check-out", authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "Already checked out" });
     }
 
+    // Calculate check-out status based on shift
+    const now = new Date();
+    const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
+
+    const checkOutResult = calculateCheckOutStatus(
+      currentTimeStr,
+      user.shift.endTime,
+      user.shift.earlyOutToleranceMinutes
+    );
+
+    // Determine final status
+    let finalStatus = attendance.status; // Keep original check-in status
+
+    // Update if there's early out or overtime
+    if (checkOutResult.isEarlyOut) {
+      finalStatus = "EARLY_OUT";
+    } else if (checkOutResult.overtimeMinutes > 0) {
+      finalStatus = "OVERTIME";
+    }
+
     // Update with check-out time
     const updatedAttendance = await prisma.attendance.update({
       where: { id: attendance.id },
       data: {
-        checkOutTime: new Date(),
+        checkOutTime: now,
+        status: finalStatus,
+        isEarlyOut: checkOutResult.isEarlyOut,
+        overtimeMinutes: checkOutResult.overtimeMinutes || 0,
       },
     });
 
     res.json({
       message: "Check-out successful",
       attendance: updatedAttendance,
+      checkOutInfo: {
+        status: finalStatus,
+        shiftEndTime: user.shift.endTime,
+        currentTime: currentTimeStr,
+        overtimeMinutes: checkOutResult.overtimeMinutes || 0,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -126,7 +236,7 @@ router.post("/check-out", authenticateToken, async (req, res) => {
   }
 });
 
-// Get today's attendance
+// Get today's attendance (UNCHANGED, but shows shift info)
 router.get("/today", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -138,11 +248,24 @@ router.get("/today", authenticateToken, async (req, res) => {
         userId,
         date: { gte: today },
       },
-      include: { location: true },
+      include: {
+        location: true,
+        shift: true,
+      },
     });
 
     if (!attendance) {
-      return res.json({ message: "No attendance record for today", attendance: null });
+      // Get user's shift even if no attendance record
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { shift: true },
+      });
+
+      return res.json({
+        message: "No attendance record for today",
+        attendance: null,
+        shift: user?.shift || null,
+      });
     }
 
     res.json(attendance);
@@ -151,7 +274,7 @@ router.get("/today", authenticateToken, async (req, res) => {
   }
 });
 
-// Get attendance history (user)
+// Get attendance history (UNCHANGED)
 router.get("/history", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -168,7 +291,10 @@ router.get("/history", authenticateToken, async (req, res) => {
 
     const attendances = await prisma.attendance.findMany({
       where,
-      include: { location: true },
+      include: {
+        location: true,
+        shift: true,
+      },
       orderBy: { date: "desc" },
       take: parseInt(limit),
     });
@@ -179,15 +305,19 @@ router.get("/history", authenticateToken, async (req, res) => {
   }
 });
 
-// Get all attendances (admin)
+// Get all attendances (admin - UNCHANGED)
 router.get("/", authenticateToken, async (req, res) => {
   try {
-    const { startDate, endDate, userId, limit = 50 } = req.query;
+    const { startDate, endDate, userId, shiftId, limit = 50 } = req.query;
 
     const where = {};
 
     if (userId) {
       where.userId = parseInt(userId);
+    }
+
+    if (shiftId) {
+      where.shiftId = parseInt(shiftId);
     }
 
     if (startDate && endDate) {
@@ -199,7 +329,11 @@ router.get("/", authenticateToken, async (req, res) => {
 
     const attendances = await prisma.attendance.findMany({
       where,
-      include: { user: true, location: true },
+      include: {
+        user: true,
+        location: true,
+        shift: true,
+      },
       orderBy: { date: "desc" },
       take: parseInt(limit),
     });

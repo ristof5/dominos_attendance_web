@@ -23,7 +23,7 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get("/users");
+      const { data } = await api.get(`/users?_=${Date.now()}`); // Prevent caching
       setUsers(data);
     } catch (error) {
       console.error("Failed to fetch users:", error);
@@ -76,7 +76,9 @@ export default function AdminUsers() {
         }
       }
 
-      fetchUsers();
+      await new Promise((resolve) => setTimeout(resolve, 300)); // Small delay for UX
+
+      await fetchUsers();
       setShowAssignForm(false);
       setSelectedUser(null);
     } catch (error) {

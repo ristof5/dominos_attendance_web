@@ -58,7 +58,7 @@ export default function AdminShifts() {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await api.get("/users");
+      const { data } = await api.get(`/users?_=${Date.now()}`); // Prevent caching
       setUsers(data);
     } catch (error) {
       console.error("Failed to fetch users:", error);
@@ -67,6 +67,17 @@ export default function AdminShifts() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let finalValue;
+    if (type === "checkbox") {
+      finalValue = checked;
+    } else if (
+      name === "lateToleranceMinutes" ||
+      name === "earlyOutToleranceMinutes"
+    ) {
+      finalValue = parseInt(value) || 0;
+    } else {
+      finalValue = value;
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -78,11 +89,23 @@ export default function AdminShifts() {
     try {
       setLoading(true);
 
+      // strip extra fields
+      const cleanData = {
+        name: formData.name.trim(),
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        lateToleranceMinutes: parseInt(formData.lateToleranceMinutes || 30),
+        earlyOutToleranceMinutes: parseInt(formData.earlyOutToleranceMinutes || 30),
+        isActive: formData.isActive,
+      };
+      console.log("Submitting shift data:", cleanData);
+
       if (editingId) {
-        await api.put(`/shifts/${editingId}`, formData);
+        const response = await api.put(`/shifts/${editingId}`, cleanData);
+        console.log("Backend response:", response.data); // ← Debug log
         setMessage("✅ Shift updated successfully");
       } else {
-        await api.post("/shifts", formData);
+        await api.post("/shifts", cleanData);
         setMessage("✅ Shift created successfully");
       }
 
@@ -99,6 +122,8 @@ export default function AdminShifts() {
       setEditingId(null);
       setFormTab("basic");
     } catch (error) {
+      console.error("Full error:", error); // ← Debug log
+      console.error("Error response:", error.response); // ← Debug log
       setMessage(
         "❌ " + (error.response?.data?.error || "Failed to save shift")
       );
@@ -108,7 +133,14 @@ export default function AdminShifts() {
   };
 
   const handleEdit = async (shift) => {
-    setFormData(shift);
+    setFormData({
+      name: shift.name,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      lateToleranceMinutes: shift.lateToleranceMinutes,
+      earlyOutToleranceMinutes: shift.earlyOutToleranceMinutes,
+      isActive: shift.isActive,
+    });
     setEditingId(shift.id);
     setShowForm(true);
     setFormTab("basic");

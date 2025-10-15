@@ -22,7 +22,7 @@ const shiftSchema = Joi.object({
   lateToleranceMinutes: Joi.number().default(30),
   earlyOutToleranceMinutes: Joi.number().default(30),
   isActive: Joi.boolean().default(true),
-});
+}).unknown(true);
 
 // Helper: Convert time string to minutes from midnight
 const timeToMinutes = (timeStr) => {
